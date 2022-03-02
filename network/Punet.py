@@ -1,4 +1,7 @@
-import tensorflow as tf
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+#import tensorflow as tf
 import numpy as np
 from network.pconv_layer import PConv2D
 
@@ -6,14 +9,14 @@ from network.pconv_layer import PConv2D
 def get_weight(shape, gain=np.sqrt(2)):
     fan_in = np.prod(shape[:-1])
     std = gain / np.sqrt(fan_in)
-    #w = tf.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal(0, std))
-    w = tf.compat.v1.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal(0, std))
+    w = tf.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal(0, std))
+    #w = tf.compat.v1.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal(0, std))
     return w
 
 
 def apply_bias(x):
-    #b = tf.get_variable('bias', shape=[x.shape[1]], initializer=tf.initializers.zeros())
-    b = tf.compat.v1.get_variable('bias', shape=[x.shape[1]], initializer=tf.initializers.zeros())
+    b = tf.get_variable('bias', shape=[x.shape[1]], initializer=tf.initializers.zeros())
+    #b = tf.compat.v1.get_variable('bias', shape=[x.shape[1]], initializer=tf.initializers.zeros())
     b = tf.cast(b, x.dtype)
     if len(x.shape) == 2:
         return x + b
@@ -21,26 +24,53 @@ def apply_bias(x):
 
 
 def Pconv2d_bias(x, fmaps, kernel, mask_in=None):
+    #assert kernel >= 1 and kernel % 2 == 1
+    #x = tf.pad(x, [[0, 0], [0, 0], [1, 1], [1, 1]], "SYMMETRIC")
+    #mask_in = tf.pad(mask_in, [[0, 0], [0, 0], [1, 1], [1, 1]], "CONSTANT", constant_values=1)
+    #conv, mask = PConv2D(fmaps, kernel, strides=1, padding='valid',
+    #                     data_format='channels_first')([x, mask_in])
+
     assert kernel >= 1 and kernel % 2 == 1
+    #print(x.shape, mask_in.shape)
+
+    x = tf.transpose(x, [0,3,1,2]) # [n,c,h,w]
     x = tf.pad(x, [[0, 0], [0, 0], [1, 1], [1, 1]], "SYMMETRIC")
+    x = tf.transpose(x, [0,2,3,1]) # [n,h+2,w+2,c]
+
+    mask_in = tf.transpose(mask_in, [0,3,1,2]) # [n,c,h,w]
     mask_in = tf.pad(mask_in, [[0, 0], [0, 0], [1, 1], [1, 1]], "CONSTANT", constant_values=1)
+    mask_in = tf.transpose(mask_in, [0,2,3,1]) # [n,c,h,w]
+
+    #print(x.shape, mask_in.shape)
     conv, mask = PConv2D(fmaps, kernel, strides=1, padding='valid',
-                         data_format='channels_first')([x, mask_in])
+                         data_format='channels_last')([x, mask_in])
     return conv, mask
 
 
 def conv2d_bias(x, fmaps, kernel, gain=np.sqrt(2)):
     assert kernel >= 1 and kernel % 2 == 1
-    w = get_weight([kernel, kernel, x.shape[1].value, fmaps], gain=gain)
+
+    #w = get_weight([kernel, kernel, x.shape[1].value, fmaps], gain=gain)
+    #w = tf.cast(w, x.dtype)
+    #x = tf.pad(x, [[0, 0], [0, 0], [1, 1], [1, 1]], "SYMMETRIC")
+    #return apply_bias(tf.nn.conv2d(x, w, strides=[1, 1, 1, 1], padding='VALID', data_format='NCHW'))
+
+    w = get_weight([kernel, kernel, x.shape[3].value, fmaps], gain=gain) # cpu
     w = tf.cast(w, x.dtype)
-    x = tf.pad(x, [[0, 0], [0, 0], [1, 1], [1, 1]], "SYMMETRIC")
-    return apply_bias(tf.nn.conv2d(x, w, strides=[1, 1, 1, 1], padding='VALID', data_format='NCHW'))
+    x = tf.transpose(x, [0,3,1,2]) # [n,c,h,w]
+    x = tf.pad(x, [[0, 0], [0, 0], [1, 1], [1, 1]], "SYMMETRIC") # [n,c,h+2,w+2]
+    x = tf.transpose(x, [0,2,3,1]) # [n,h+2,w+2,c]
+    return apply_bias(tf.nn.conv2d(x, w, strides=[1, 1, 1, 1], padding='VALID', data_format='NHWC'))
 
 
 def Pmaxpool2d(x, k=2, mask_in=None):
-    ksize = [1, 1, k, k]
-    x = tf.nn.max_pool(x, ksize=ksize, strides=ksize, padding='SAME', data_format='NCHW')
-    mask_out = tf.nn.max_pool(mask_in, ksize=ksize, strides=ksize, padding='SAME', data_format='NCHW')
+    #ksize = [1, 1, k, k]
+    #x = tf.nn.max_pool(x, ksize=ksize, strides=ksize, padding='SAME', data_format='NCHW')
+    #mask_out = tf.nn.max_pool(mask_in, ksize=ksize, strides=ksize, padding='SAME', data_format='NHWC')
+
+    ksize = [1, k, k, 1]
+    x = tf.nn.max_pool(x, ksize=ksize, strides=ksize, padding='SAME', data_format='NHWC')
+    mask_out = tf.nn.max_pool(mask_in, ksize=ksize, strides=ksize, padding='SAME', data_format='NHWC')
     return x, mask_out
 
 
@@ -54,9 +84,16 @@ def upscale2d(x, factor=2):
     if factor == 1: return x
     with tf.compat.v1.variable_scope('Upscale2D'):
         s = x.shape
+        '''
         x = tf.reshape(x, [-1, s[1], s[2], 1, s[3], 1])
         x = tf.tile(x, [1, 1, 1, factor, 1, factor])
         x = tf.reshape(x, [-1, s[1], s[2] * factor, s[3] * factor])
+        '''
+
+        x = tf.reshape(x, [-1, s[1], 1, s[2], 1, s[3]])
+        x = tf.tile(x, [1, 1, factor, 1, factor,1])
+        x = tf.reshape(x, [-1, s[1] * factor, s[2] * factor, s[3]])
+
         return x
 
 
@@ -78,11 +115,15 @@ def Pconv_lr(name, x, fmaps, mask_in):
         return tf.nn.leaky_relu(x_out, alpha=0.1), mask_out
 
 
+#response, mask_tensor_sample, channel=c, width=w, height=h, p=p)
 def partial_conv_unet(x, mask, channel=3, width=256, height=256, p=0.7, **_kwargs):
-    x.set_shape([None, channel, height, width])
-    mask.set_shape([None, channel, height, width])
+    #x.set_shape([None, channel, height, width])
+    #mask.set_shape([None, channel, height, width])
+    x.set_shape([None, height, width, channel])
+    mask.set_shape([None, height, width, channel])
     skips = [x]
 
+    #print('In p conv unet')
     n = x
     n, mask = Pconv_lr('enc_conv0', n, 48, mask_in=mask)
     n, mask = Pconv_lr('enc_conv1', n, 48, mask_in=mask)
@@ -104,6 +145,7 @@ def partial_conv_unet(x, mask, channel=3, width=256, height=256, p=0.7, **_kwarg
     n, mask = Pconv_lr('enc_conv5', n, 48, mask_in=mask)
     n, mask = Pmaxpool2d(n, mask_in=mask)
     n, mask = Pconv_lr('enc_conv6', n, 48, mask_in=mask)
+
 
     # -----------------------------------------------
     n = upscale2d(n)
@@ -136,11 +178,19 @@ def partial_conv_unet(x, mask, channel=3, width=256, height=256, p=0.7, **_kwarg
 
 
 def concat(x, y):
+    '''
     bs1, c1, h1, w1 = x.shape.as_list()
     bs2, c2, h2, w2 = y.shape.as_list()
     x = tf.image.crop_to_bounding_box(tf.transpose(x, [0, 2, 3, 1]), 0, 0, min(h1, h2), min(w1, w2))
     y = tf.image.crop_to_bounding_box(tf.transpose(y, [0, 2, 3, 1]), 0, 0, min(h1, h2), min(w1, w2))
     return tf.transpose(tf.concat([x, y], axis=3), [0, 3, 1, 2])
+    '''
+
+    bs1, h1, w1, c1 = x.shape.as_list()
+    bs2, h2, w2, c2 = y.shape.as_list()
+    x = tf.image.crop_to_bounding_box(x, 0, 0, min(h1, h2), min(w1, w2))
+    y = tf.image.crop_to_bounding_box(y, 0, 0, min(h1, h2), min(w1, w2))
+    return tf.concat([x, y], axis=3)
 
 
 def build_denoising_unet(noisy, p=0.7, is_realnoisy=False):
@@ -153,8 +203,8 @@ def build_denoising_unet(noisy, p=0.7, is_realnoisy=False):
     mask_tensor = tf.ones_like(response)
     mask_tensor = tf.nn.dropout(mask_tensor, 0.7) * 0.7
     response = tf.multiply(mask_tensor, response)
-    #slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
-    slice_avg = tf.compat.v1.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
+    slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
+    #slice_avg = tf.compat.v1.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
     if is_realnoisy:
         response = tf.squeeze(tf.random_poisson(25 * response, [1]) / 25, 0)
     response = partial_conv_unet(response, mask_tensor, channel=c, width=w, height=h, p=p)
@@ -186,18 +236,34 @@ def build_denoising_unet(noisy, p=0.7, is_realnoisy=False):
 
 
 def build_inpainting_unet(img, mask, p=0.7):
-    _, h, w, c = np.shape(img)
+    '''
+    _, c, h, w = np.shape(img) # cpu
     img_tensor = tf.identity(img)
     mask_tensor = tf.identity(mask)
     response = tf.transpose(img_tensor, [0, 3, 1, 2])
     mask_tensor_sample = tf.transpose(mask_tensor, [0, 3, 1, 2])
+    slide_avg = tf.compat.v1.get_variable('slice_avg', shape=[_, h, w, c],
+                                          initializer=tf.initializers.zeros())
+    '''
+
+    # cpu
+    _, h, w, c = np.shape(img)
+    img_tensor = tf.identity(img)
+    mask_tensor = tf.identity(mask)
+
+    response, mask_tensor_sample = img_tensor, mask_tensor
     mask_tensor_sample = tf.nn.dropout(mask_tensor_sample, 0.7) * 0.7
+
     response = tf.multiply(mask_tensor_sample, response)
-    #slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
-    slide_avg = tf.compat.v1.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
+    slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c],
+                                initializer=tf.initializers.zeros())
+    #
+
     response = partial_conv_unet(response, mask_tensor_sample, channel=c, width=w, height=h, p=p)
-    response = tf.transpose(response, [0, 2, 3, 1])
-    mask_tensor_sample = tf.transpose(mask_tensor_sample, [0, 2, 3, 1])
+    #response = tf.transpose(response, [0, 2, 3, 1])
+    #mask_tensor_sample = tf.transpose(mask_tensor_sample, [0, 2, 3, 1])
+
+    #print(response.shape, img_tensor.shape, mask_tensor.shape, mask_tensor_sample.shape)
     data_loss = mask_loss(response, img_tensor, mask_tensor - mask_tensor_sample)
     avg_op = slice_avg.assign(slice_avg * 0.99 + response * 0.01)
     our_image = img_tensor + tf.multiply(response, 1 - mask_tensor)
