@@ -1,6 +1,7 @@
 from keras.utils import conv_utils
 from keras import backend as K
-from keras.engine import InputSpec
+#from keras.engine import InputSpec
+from tensorflow.keras.layers import InputSpec
 from keras.layers import Conv2D
 
 
@@ -10,7 +11,7 @@ class PConv2D(Conv2D):
         self.input_spec = [InputSpec(ndim=4), InputSpec(ndim=4)]
 
     def build(self, input_shape):
-        """Adapted from original _Conv() layer of Keras        
+        """Adapted from original _Conv() layer of Keras
         param input_shape: list of dimensions for [img, mask]
         """
 

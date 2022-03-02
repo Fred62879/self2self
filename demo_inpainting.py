@@ -15,7 +15,9 @@ N_STEP = 150000
 
 def train(file_path, dropout_rate, mask_rate):
     print(file_path)
-    tf.reset_default_graph()
+    #tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
+
     gt = util.load_np_image(file_path)
     _, w, h, c = np.shape(gt)
     model_path = file_path[0:file_path.rfind(".")] + "/" + str(mask_rate) + "/model/Self2Self/"

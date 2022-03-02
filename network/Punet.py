@@ -6,12 +6,14 @@ from network.pconv_layer import PConv2D
 def get_weight(shape, gain=np.sqrt(2)):
     fan_in = np.prod(shape[:-1])
     std = gain / np.sqrt(fan_in)
-    w = tf.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal(0, std))
+    #w = tf.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal(0, std))
+    w = tf.compat.v1.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal(0, std))
     return w
 
 
 def apply_bias(x):
-    b = tf.get_variable('bias', shape=[x.shape[1]], initializer=tf.initializers.zeros())
+    #b = tf.get_variable('bias', shape=[x.shape[1]], initializer=tf.initializers.zeros())
+    b = tf.compat.v1.get_variable('bias', shape=[x.shape[1]], initializer=tf.initializers.zeros())
     b = tf.cast(b, x.dtype)
     if len(x.shape) == 2:
         return x + b
@@ -50,7 +52,7 @@ def maxpool2d(x, k=2):
 def upscale2d(x, factor=2):
     assert isinstance(factor, int) and factor >= 1
     if factor == 1: return x
-    with tf.variable_scope('Upscale2D'):
+    with tf.compat.v1.variable_scope('Upscale2D'):
         s = x.shape
         x = tf.reshape(x, [-1, s[1], s[2], 1, s[3], 1])
         x = tf.tile(x, [1, 1, 1, factor, 1, factor])
@@ -59,19 +61,19 @@ def upscale2d(x, factor=2):
 
 
 def conv_lr(name, x, fmaps, p=0.7):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         x = tf.nn.dropout(x, p)
         return tf.nn.leaky_relu(conv2d_bias(x, fmaps, 3), alpha=0.1)
 
 
 def conv(name, x, fmaps, p):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         x = tf.nn.dropout(x, p)
         return tf.nn.sigmoid(conv2d_bias(x, fmaps, 3, gain=1.0))
 
 
 def Pconv_lr(name, x, fmaps, mask_in):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
         x_out, mask_out = Pconv2d_bias(x, fmaps, 3, mask_in=mask_in)
         return tf.nn.leaky_relu(x_out, alpha=0.1), mask_out
 
@@ -151,7 +153,8 @@ def build_denoising_unet(noisy, p=0.7, is_realnoisy=False):
     mask_tensor = tf.ones_like(response)
     mask_tensor = tf.nn.dropout(mask_tensor, 0.7) * 0.7
     response = tf.multiply(mask_tensor, response)
-    slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
+    #slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
+    slice_avg = tf.compat.v1.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
     if is_realnoisy:
         response = tf.squeeze(tf.random_poisson(25 * response, [1]) / 25, 0)
     response = partial_conv_unet(response, mask_tensor, channel=c, width=w, height=h, p=p)
@@ -190,7 +193,8 @@ def build_inpainting_unet(img, mask, p=0.7):
     mask_tensor_sample = tf.transpose(mask_tensor, [0, 3, 1, 2])
     mask_tensor_sample = tf.nn.dropout(mask_tensor_sample, 0.7) * 0.7
     response = tf.multiply(mask_tensor_sample, response)
-    slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
+    #slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
+    slide_avg = tf.compat.v1.get_variable('slice_avg', shape=[_, h, w, c], initializer=tf.initializers.zeros())
     response = partial_conv_unet(response, mask_tensor_sample, channel=c, width=w, height=h, p=p)
     response = tf.transpose(response, [0, 2, 3, 1])
     mask_tensor_sample = tf.transpose(mask_tensor_sample, [0, 2, 3, 1])
