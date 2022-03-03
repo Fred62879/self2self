@@ -13,7 +13,7 @@ from astropy.nddata import Cutout2D
 
 
 def get_header(sz):
-    hdu = fits.open('../../data/pdr3_dud/calexp-HSC-G-9813-0%2C0.fits')[1]
+    hdu = fits.open('../../../data/pdr3_dud/calexp-HSC-G-9813-0%2C0.fits')[1]
     header = hdu.header
     cutout = Cutout2D(hdu.data, position=(sz//2, sz//2),
                       size=sz, wcs=WCS(header))
@@ -49,9 +49,13 @@ def mask_pixel(img, recon_dir, rate, mask_path):
     n_dim = img.shape[-1]
     masked_img = img.copy()
     if os.path.exists(mask_path):
-        mask = np.load(mask_path) # [h,w,c]
-        mask = np.expand_dims(mask, axis=0) # [1,h,c,1]
-        mask = np.tile(mask, n_dim).astype(np.float32)
+        mask = np.load(mask_path) # [h,w,1/n_dim]
+
+        if mask.shape[-1] < n_dim: # spatial inapainting mask
+            mask = np.tile(mask, n_dim)
+
+        mask = np.expand_dims(mask, axis=0) # [1,h,w,1/n_dim]
+        mask = mask.astype(np.float32)
         masked_img *= mask
     else:
         mask = np.ones_like(masked_img)
@@ -87,9 +91,7 @@ def reconstruct(n_pred, sz, sess, slice_avg, gt_image,
         sum += o_image
 
     recon = sum / n_pred
-    print('d')
     np.save(recon_path + '.npy', recon)
-    print('e')
     #o_image = np.squeeze(np.uint8(np.clip(sum / N_PREDICTION, 0, 1) * 255))
     #cv2.imwrite(o_image_fn, o_image)
 

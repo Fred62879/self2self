@@ -19,13 +19,14 @@ def train():
     parser.add_argument('--test', action='store_true')
     parser.add_argument('--imgsz', type=int, default=64)
     parser.add_argument('--ratio', type=int, default=100)
+    parser.add_argument('--niters', type=int, default=100)
+    parser.add_argument('--spectra', action='store_true')
 
     args = parser.parse_args()
 
     TF_DATA_TYPE = tf.float32
     N_PREDICTION = 1#100
 
-    n_iters = 4
     batch_sz = 1
     mask_mode = 2
     learning_rt = 1e-4
@@ -37,11 +38,13 @@ def train():
     nfls = args.nfls      # num bands
     ratio = args.ratio    # ratio %
     img_sz = args.imgsz
+    n_iters = args.niters
+    spectra = args.spectra
     save_intvl = n_iters // 4
 
     loss = 'l1_'
     dim = '2d_'+ str(nfls)
-    data_dir = '../../data'
+    data_dir = '../../../data'
     mask_dir = os.path.join(data_dir, 'pdr3_output/sampled_id')
     output_dir = os.path.join(data_dir, 'pdr3_output/'+dim+'/S2S',
                               str(img_sz), loss + str(ratio))
@@ -52,8 +55,8 @@ def train():
     n = len(os.listdir(model_dir))
     model_path = os.path.join(model_dir, 'model' + str(n-1) + '.pth')
 
-    img_path = os.path.join(data_dir, 'pdr3_output/2d_5/orig_imgs/0_'+str(img_sz)+'_rfr.npy')
     mask_path = os.path.join(mask_dir, str(img_sz)+'_'+str(ratio)+'_mask.npy')
+    img_path = os.path.join(data_dir, 'pdr3_output', dim, 'orig_imgs/0_'+str(img_sz)+'_rfr.npy')
 
 
     # load data
@@ -65,6 +68,7 @@ def train():
 
     masked_img, mask = util.mask_pixel(gt, recon_dir, 1 - ratio, mask_path)
 
+    print('GT max', np.round(np.max(gt, axis=(0,1,2)), 3) )
     print('Training on {}% pixls'.format(ratio))
     print('GT & mask shape', gt.shape, gt.dtype, mask.shape, mask.dtype,
           masked_img.shape, masked_img.dtype)
