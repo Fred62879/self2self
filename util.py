@@ -12,8 +12,8 @@ from astropy.wcs import WCS
 from astropy.nddata import Cutout2D
 
 
-def get_header(sz):
-    hdu = fits.open('../../../data/pdr3_dud/calexp-HSC-G-9813-0%2C0.fits')[1]
+def get_header(dir, sz):
+    hdu = fits.open(os.path.join(dir, 'pdr3_dud/calexp-HSC-G-9813-0%2C0.fits'))[1]
     header = hdu.header
     cutout = Cutout2D(hdu.data, position=(sz//2, sz//2),
                       size=sz, wcs=WCS(header))
@@ -33,13 +33,11 @@ def add_gaussian_noise(img, model_path, sigma):
     return noisy_img
 
 
-def load_np_image(path, is_scale=True):
+def load_np_image(path):
     img = cv2.imread(path, -1)
     if img.ndim == 2:
         img = np.expand_dims(img, axis=2)
-    img = np.expand_dims(img, axis=0)
-    if is_scale:
-        img = np.array(img).astype(np.float32) / 255.
+    img = np.expand_dims(img, axis=0).astype(float32)
     return img
 
 
@@ -53,7 +51,8 @@ def mask_pixel(img, recon_dir, rate, mask_path):
 
     mask = np.load(mask_path) # [h,w,1/n_dim]
     mask = np.expand_dims(mask, axis=0) # [1,h,w,1/n_dim]
-    mask = np.tile(mask, n_dim).astype(np.float32)
+    #mask = np.tile(mask, n_dim).astype(np.float32)
+    mask = mask.astype(np.float32)
     masked_img *= mask
 
     mask_fn = os.path.join(recon_dir,'mask.npy')

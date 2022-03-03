@@ -20,7 +20,7 @@ def train():
     parser.add_argument('--imgsz', type=int, default=64)
     parser.add_argument('--ratio', type=int, default=100)
     parser.add_argument('--niters', type=int, default=100)
-    parser.add_argument('--spectra', action='store_true')
+    parser.add_argument('--spectral', action='store_true')
 
     args = parser.parse_args()
 
@@ -39,13 +39,14 @@ def train():
     ratio = args.ratio    # ratio %
     img_sz = args.imgsz
     n_iters = args.niters
-    spectra = args.spectra
+    spectral = args.spectral
     save_intvl = n_iters // 4
 
     loss = 'l1_'
     dim = '2d_'+ str(nfls)
-    data_dir = '../../../data'
-    mask_dir = os.path.join(data_dir, 'pdr3_output/sampled_id')
+    data_dir = '../../data'
+    mask_dir = os.path.join(data_dir, 'pdr3_output/sampled_id',
+                            'spectral' if spectral else 'spatial')
     output_dir = os.path.join(data_dir, 'pdr3_output/'+dim+'/S2S',
                               str(img_sz), loss + str(ratio))
 
@@ -60,7 +61,7 @@ def train():
 
 
     # load data
-    header = util.get_header(img_sz)
+    header = util.get_header(data_dir, img_sz)
     gt = np.load(img_path).astype(np.float32) # [n,h,w,c]
     gt = np.expand_dims(gt, axis=0)
     _, w, h, c = np.shape(gt)
@@ -105,7 +106,7 @@ def train():
                 recon = sum/N_PREDICTION
                 recon = recon.reshape((img_sz,img_sz,-1)).transpose(2,0,1)
                 recon_path = os.path.join(recon_dir, '0_'+str(img_sz)+'_'+str(step) + '_0')
-                reconstruct(gt, recon, recon_path, loss_dir, header=None):
+                util.reconstruct(gt, recon, recon_path, loss_dir, header=None)
 
                 #recon = sum / N_PREDICTION
                 #recon_fn = os.path.join(recon_dir, '0_'+str(img_sz)+'_'+str(step + 1) + '_0.npy')
@@ -113,7 +114,7 @@ def train():
 
                 #o_image = np.squeeze(np.uint8(np.clip(sum / N_PREDICTION, 0, 1) * 255))
                 #cv2.imwrite(o_image_fn, o_image)
-                saver.save(sess, os.path.join(model_dir, 'model'+str(step)))
+                #saver.save(sess, os.path.join(model_dir, 'model'+str(step)))
 
 if __name__ == '__main__':
     train()
