@@ -58,7 +58,6 @@ def train():
 
     # load data
     header = util.get_header(img_sz)
-    #gt = util.load_np_image(img_path)
     gt = np.load(img_path).astype(np.float32) # [n,h,w,c]
     gt = np.expand_dims(gt, axis=0)
     _, w, h, c = np.shape(gt)
@@ -102,14 +101,7 @@ def train():
                 recon = sum/N_PREDICTION
                 recon = recon.reshape((img_sz,img_sz,-1)).transpose(2,0,1)
                 recon_path = os.path.join(recon_dir, '0_'+str(img_sz)+'_'+str(step) + '_0')
-                np.save(recon_path + '.npy', recon)
-                hdu = fits.PrimaryHDU(data=recon, header=header)
-                hdu.writeto(recon_path + '.fits', overwrite=True)
-
-                '''
-                util.reconstruct(N_PREDICTION, img_sz, sess, slice_avg, gt,
-                                 recon_path, loss_dir, header=header)
-                '''
+                reconstruct(gt, recon, recon_path, loss_dir, header=None):
 
                 #recon = sum / N_PREDICTION
                 #recon_fn = os.path.join(recon_dir, '0_'+str(img_sz)+'_'+str(step + 1) + '_0.npy')

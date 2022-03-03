@@ -43,55 +43,28 @@ def load_np_image(path, is_scale=True):
     return img
 
 
-# img [n,h,w,c]
+# img [n,h,w,n_dim]
 # 0-masked, 1-use for train
 def mask_pixel(img, recon_dir, rate, mask_path):
     n_dim = img.shape[-1]
     masked_img = img.copy()
-    if os.path.exists(mask_path):
-        mask = np.load(mask_path) # [h,w,c]
-        mask = np.expand_dims(mask, axis=0) # [1,h,c,1]
-        mask = np.tile(mask, n_dim).astype(np.float32)
-        masked_img *= mask
-    else:
-        mask = np.ones_like(masked_img)
-        n = np.shape(img)[1] * np.shape(img)[2]
-        perm_idx = np.arange(n)
-        random.shuffle(perm_idx)
+    assert(os.path.exists(mask_path))
 
-        for i in range(np.int32(n * rate)):
-            x, y = np.divmod(perm_idx[i], np.shape(img)[2])
-            masked_img[:, x, y, :] = 0
-            mask[:, x, y, :] = 0
+    mask = np.load(mask_path) # [h,w,1/n_dim]
+    mask = np.expand_dims(mask, axis=0) # [1,h,w,1/n_dim]
+    mask = np.tile(mask, n_dim).astype(np.float32)
+    masked_img *= mask
 
     mask_fn = os.path.join(recon_dir,'mask.npy')
     masked_img_fn = os.path.join(recon_dir,'masked_img.npy')
     np.save(mask_fn, mask)
     np.save(masked_img_fn, masked_img)
 
-    #mask = np.squeeze(np.uint8(np.clip(mask, 0, 1) * 255.))
-    #masked_img = np.squeeze(np.uint8(np.clip(masked_img, 0, 1) * 255.))
-    #cv2.imwrite(mask_fn, mask)
-    #cv2.imwrite(masked_img_fn, masked_img)
-
     return masked_img, mask
 
 
-def reconstruct(n_pred, sz, sess, slice_avg, gt_image,
-                recon_path, loss_dir, header=None):
-    print('c')
-    sum = np.float32(np.zeros(gt_image.shape))
-
-    for j in range(n_pred):
-        o_avg, o_image = sess.run([slice_avg, gt_image])
-        sum += o_image
-
-    recon = sum / n_pred
-    print('d')
+def reconstruct(gt, recon, recon_path, loss_dir, header=None):
     np.save(recon_path + '.npy', recon)
-    print('e')
-    #o_image = np.squeeze(np.uint8(np.clip(sum / N_PREDICTION, 0, 1) * 255))
-    #cv2.imwrite(o_image_fn, o_image)
 
     if header is not None:
         print(gt_image.shape, type(gt_image))
