@@ -263,7 +263,7 @@ def build_inpainting_unet(img, mask, p=0.7):
     #response = tf.transpose(response, [0, 2, 3, 1])
     #mask_tensor_sample = tf.transpose(mask_tensor_sample, [0, 2, 3, 1])
 
-    #print(response.shape, img_tensor.shape, mask_tensor.shape, mask_tensor_sample.shape)
+    print(response.shape, img_tensor.shape, mask_tensor.shape, mask_tensor_sample.shape)
     data_loss = mask_loss(response, img_tensor, mask_tensor - mask_tensor_sample)
     avg_op = slice_avg.assign(slice_avg * 0.99 + response * 0.01)
     our_image = img_tensor + tf.multiply(response, 1 - mask_tensor)

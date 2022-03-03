@@ -10,6 +10,7 @@ import tensorflow.compat.v1 as tf
 from astropy.io import fits
 from astropy.wcs import WCS
 from astropy.nddata import Cutout2D
+from skimage.metrics import structural_similarity
 
 
 def get_header(dir, sz):
@@ -47,6 +48,7 @@ def mask_pixel(img, recon_dir, rate, mask_path):
     n_dim = img.shape[-1]
     masked_img = img.copy()
 
+    print(mask_path)
     assert(os.path.exists(mask_path))
 
     mask = np.load(mask_path) # [h,w,1/n_dim]
@@ -62,21 +64,21 @@ def mask_pixel(img, recon_dir, rate, mask_path):
 
     return masked_img, mask
 
-
+# gt/recon, [c,h,w]
 def reconstruct(gt, recon, recon_path, loss_dir, header=None):
+    sz = gt.shape[1]
     np.save(recon_path + '.npy', recon)
 
     if header is not None:
-        print(gt_image.shape, type(gt_image))
-        print('GT max', np.round(np.max(gt_image, axis=(0,1,2)), 3) )
-        print('Recon pixl max ', np.round(np.max(recon, axis=(0,1,2)), 3) )
+        print('GT max', np.round(np.max(gt, axis=(1,2)), 3) )
+        print('Recon pixl max ', np.round(np.max(recon, axis=(1,2)), 3) )
         print('Recon stat ', round(np.min(recon), 3), round(np.median(recon), 3),
               round(np.mean(recon), 3), round(np.max(recon), 3))
 
         hdu = fits.PrimaryHDU(data=recon, header=header)
         hdu.writeto(recon_path + '.fits', overwrite=True)
 
-        losses = get_losses(gt_image, recon, None, [1,2,4])
+        losses = get_losses(gt, recon, None, [1,2,4])
 
         for nm, loss in zip(['_mse','_psnr','_ssim'], losses):
             fn = '0_'+str(sz)+nm+'_0.npy'
