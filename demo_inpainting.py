@@ -2,6 +2,7 @@
 import os
 import cv2
 import util
+import time
 import argparse
 import numpy as np
 import network.Punet
@@ -18,7 +19,7 @@ def train():
 
     parser.add_argument('--nfls', type=int, default=5)
     parser.add_argument('--imgsz', type=int, default=64)
-    parser.add_argument('--ratio', type=int, default=100)
+    parser.add_argument('--ratio', type=float, default=100)
     parser.add_argument('--niters', type=int, default=100)
     parser.add_argument('--spectral', action='store_true')
 
@@ -84,6 +85,9 @@ def train():
     id = 0
     avg_loss = 0
 
+
+    start = time.time()
+    
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
@@ -106,10 +110,14 @@ def train():
                     print(recon.shape)
                     recon = recon.reshape((img_sz,img_sz,-1)).transpose(2,0,1)
                     print(recon.shape)
-                    recon_path = os.path.join(recon_dir, '0_'+str(img_sz)+'_'+str(id) + '_0')
+                    recon_path = os.path.join(recon_dir, '0_'+str(img_sz)+'_'+str(id+1) + '_0')
                     util.reconstruct(gt[0].transpose(2,0,1), recon,
                                      recon_path, loss_dir, header=header)
                 id += 1
+                
+
+    duration = time.time() - start
+    print('Timing ', duration )
 
 if __name__ == '__main__':
     train()
