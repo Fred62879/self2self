@@ -51,8 +51,8 @@ def mask_pixel(img, recon_dir, rate, mask_path):
     assert(os.path.exists(mask_path))
 
     mask = np.load(mask_path) # [h,w,1/n_dim]
-    if mask.shape[-1] != n_dim:
-        mask = np.tile(mask[:,:,0:1], n_dim)
+    #if mask.shape[-1] != n_dim:
+    #    mask = np.tile(mask[:,:,0:1], n_dim)
 
     mask = np.expand_dims(mask, axis=0) # [1,h,w,1/n_dim]
     #mask = np.tile(mask, n_dim).astype(np.float32)

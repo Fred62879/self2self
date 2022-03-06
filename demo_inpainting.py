@@ -63,7 +63,7 @@ def train():
     _, w, h, c = np.shape(gt)
 
     masked_img, mask = util.mask_pixel(gt, recon_dir, 1 - ratio, mask_path)
-    print(np.count_nonzero(mask[:,:,2]))
+    print('Mask shape, and nonzeros, ', mask.shape, np.count_nonzero(mask[:,:,2]))
 
     print('GT max', np.round(np.max(gt, axis=(0,1,2)), 3) )
     print('Training on {}% pixls'.format(ratio))

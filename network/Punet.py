@@ -243,7 +243,6 @@ def build_inpainting_unet(img, mask, p=0.7):
 
     return model
 
-
 def mask_loss(x, labels, masks):
     cnt_nonzero = tf.to_float(tf.count_nonzero(masks))
     loss = tf.reduce_sum(tf.multiply(tf.math.pow(x - labels, 2), masks)) / cnt_nonzero
