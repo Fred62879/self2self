@@ -210,7 +210,10 @@ def build_inpainting_unet(img, mask, p=0.7):
     mask_tensor = tf.identity(mask)
 
     response, mask_tensor_sample = img_tensor, mask_tensor
+    init_nonzero = tf.to_float(tf.count_nonzero(mask_tensor[:,:,:,2]))
+
     mask_tensor_sample = tf.nn.dropout(mask_tensor_sample, 0.7) * 0.7
+    drop_nonzero = tf.to_float(tf.count_nonzero(mask_tensor_sample[:,:,:,2]))
 
     response = tf.multiply(mask_tensor_sample, response)
     slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c],
@@ -222,16 +225,21 @@ def build_inpainting_unet(img, mask, p=0.7):
     #mask_tensor_sample = tf.transpose(mask_tensor_sample, [0, 2, 3, 1])
 
    # print(response.shape, img_tensor.shape, mask_tensor.shape, mask_tensor_sample.shape)
-    data_loss = mask_loss(response, img_tensor, mask_tensor - mask_tensor_sample)
+    data_loss, non_zero = mask_loss(response, img_tensor, mask_tensor - mask_tensor_sample)
     avg_op = slice_avg.assign(slice_avg * 0.99 + response * 0.01)
     our_image = img_tensor + tf.multiply(response, 1 - mask_tensor)
 
     training_error = data_loss
+    tf.summary.scalar('non zero', non_zero)
     tf.summary.scalar('data loss', data_loss)
 
     merged = tf.summary.merge_all()
     saver = tf.train.Saver(max_to_keep=3)
     model = {
+        'init_nonzero': init_nonzero,
+        'drop_nonzero': drop_nonzero,
+        'non_zero': non_zero,
+
         'training_error': training_error,
         'data_loss': data_loss,
         'saver': saver,
@@ -247,7 +255,7 @@ def build_inpainting_unet(img, mask, p=0.7):
 def mask_loss(x, labels, masks):
     cnt_nonzero = tf.to_float(tf.count_nonzero(masks))
     loss = tf.reduce_sum(tf.multiply(tf.math.pow(x - labels, 2), masks)) / cnt_nonzero
-    return loss
+    return loss, cnt_nonzero
 
 
 def data_arg(x, is_flip_lr, is_flip_ud):
