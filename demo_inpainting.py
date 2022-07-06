@@ -12,7 +12,7 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 from astropy.io import fits
 
-# python3 demo_inpainting.py --nfls 5 --imgsz 512 --ratio 10 --niters 20
+# python demo_inpainting.py --nfls 11 --imgsz 512 --ratio 10 --niters 20
 
 def train():
     parser = argparse.ArgumentParser()

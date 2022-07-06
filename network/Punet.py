@@ -116,6 +116,7 @@ def Pconv_lr(name, x, fmaps, mask_in):
 
 
 #response, mask_tensor_sample, channel=c, width=w, height=h, p=p)
+# x[bsz,h,w,c]
 def partial_conv_unet(x, mask, channel=3, width=256, height=256, p=0.7, **_kwargs):
     #x.set_shape([None, channel, height, width])
     #mask.set_shape([None, channel, height, width])
