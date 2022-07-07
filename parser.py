@@ -86,6 +86,9 @@ def add_input_paths(config):
     config['dud_dir'] = join(input_dir, dr+'_dud')
     config['gt_img_fn'] = join(img_data_dir, 'gt_img_'+ suffx)
 
+    config['fits_fn'] = join(config['dud_dir'], 'calexp-HSC-G-'+config['footprint']+'-'+
+                             config['tile_id']+'%2C'+config['subtile_id']+'.fits')
+
 def add_train_infer_args(config):
     num_bands = config['num_bands']
     num_epochs = config['num_epochs']
@@ -132,7 +135,8 @@ def add_train_infer_args(config):
 
 def add_output_paths(config):
     output_dir = join\
-        (config['data_dir'], config['model_name'] +'_output',
+        (config['data_dir'], config['dr'] + '_output',
+         config['model_name'] +'_output',
          config['sensor_collection_name'],
          'trail_'+ config['trail_id'], config['experiment_id'])
 

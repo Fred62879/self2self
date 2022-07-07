@@ -13,8 +13,8 @@ from astropy.nddata import Cutout2D
 from skimage.metrics import structural_similarity
 
 
-def get_header(dir, sz):
-    hdu = fits.open(os.path.join(dir, 'pdr3_dud/calexp-HSC-G-9813-0%2C0.fits'))[1]
+def get_header(fits_fn, sz):
+    hdu = fits.open(os.path.join(fits_fn))[1]
     header = hdu.header
     cutout = Cutout2D(hdu.data, position=(sz//2, sz//2),
                       size=sz, wcs=WCS(header))
@@ -44,13 +44,18 @@ def load_np_image(path):
 
 # img [n,h,w,n_dim]
 # 0-masked, 1-use for train
-def mask_pixel(img, recon_dir, rate, mask_path):
+def mask_pixel(img, recon_dir, ratio, mask_path):
     n_dim = img.shape[-1]
     masked_img = img.copy()
 
+    print(mask_path)
     assert(os.path.exists(mask_path))
 
-    mask = np.load(mask_path) # [h,w,1/n_dim]
+    # first ratio% is id of non-masked pixl
+    mask = np.load(mask_path) # [nb,npixls,nchls]  [h,w,1/n_dim]
+    (npixls, nchls) = mask.shape
+    img_sz = int(np.sqrt(npixls))
+    mask = mask.reshape((img_sz, img_sz, nchls))
     #if mask.shape[-1] != n_dim:
     #    mask = np.tile(mask[:,:,0:1], n_dim)
 

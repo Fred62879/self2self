@@ -12,22 +12,23 @@ import tensorflow.compat.v1 as tf
 
 tf.disable_v2_behavior()
 from astropy.io import fits
+from parser import parse_args
 
 # python demo_inpainting.py --nfls 11 --imgsz 512 --ratio 10 --niters 20
 
 def train(dropout_rate, N_PREDICTION, args):
     # load data
-    header = util.get_header(args.data_dir, args.img_sz)
-    gt = np.load(img_path).astype(np.float32) # [n,h,w,c]
+    header = util.get_header(args.fits_fn, args.img_sz)
+    gt = np.load(args.gt_img_fn).astype(np.float32) # [n,h,w,c]
     gt = gt.transpose((1,2,0))
     gt = np.expand_dims(gt, axis=0)
     _, w, h, c = np.shape(gt)
 
     masked_img, mask = util.mask_pixel\
-        (gt, args.recon_dir, 1 - args.smpl_ratio, args.smpl_pixl_ids_dir)
+        (gt, args.recon_dir, 1 - args.sample_ratio, args.sampled_pixl_id_fn)
 
-    print('Training on {}% pixls'.format(ratio))
-    print(mask.shape, np.count_nonzero(mask[...,2]))
+    print('Training on %d percent pixls' % (args.sample_ratio*100))
+    print([np.count_nonzero(mask[...,i]) for i in range(mask.shape[-1])])
     print('GT max', np.round(np.max(gt, axis=(0,1,2)), 3) )
     print('GT & mask shape', gt.shape, gt.dtype, mask.shape, mask.dtype,
           masked_img.shape, masked_img.dtype)
@@ -55,9 +56,9 @@ def train(dropout_rate, N_PREDICTION, args):
                     sess.run([non_zero, optimizer, avg_op, loss, summay, our_image])
             avg_loss += loss_value
 
-            if step == 0 or (step + 1) % args.smpl_intvl == 0:
+            if step == 0 or (step + 1) % args.model_smpl_intvl == 0:
                 print("[Iteration/Total]:[%d/%d], [avg_loss]:[%.4f]" %
-                      (step + 1, args.num_epochs, avg_loss / smpl_intvl))
+                      (step + 1, args.num_epochs, avg_loss / args.model_smpl_intvl))
                 print('Iteration {}, non zero mask {}'.format(step, cur_non_zero))
                 avg_loss = 0
                 sum = np.float32(np.zeros(our_image.shape.as_list()))
@@ -68,10 +69,9 @@ def train(dropout_rate, N_PREDICTION, args):
 
                 recon = sum/N_PREDICTION
                 recon = recon.reshape((args.img_sz, args.img_sz,-1)).transpose(2,0,1)
-                recon_path = os.path.join(args.recon_dir, '0_'+str(args.img_sz) +
-                                          '_' + str(id+1) + '_0')
+                recon_path = os.path.join(args.recon_dir, str(id+1))
                 util.reconstruct(gt[0].transpose(2,0,1), recon,
-                                 args.recon_dir, args.metric_dir, header=header)
+                                 recon_path, args.metric_dir, header=header)
                 id += 1
 
 
