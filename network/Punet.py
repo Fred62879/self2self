@@ -212,11 +212,13 @@ def build_inpainting_unet(img, mask, p=0.7):
 
     response, mask_tensor_sample = img_tensor, mask_tensor
     #init_nonzero = tf.to_float(tf.count_nonzero(mask_tensor[:,:,:,2]))
-    init_nonzero = tf.to_float(tf.count_nonzero(mask_tensor[:,:,:,-1]))
+    #init_nonzero = tf.to_float(tf.count_nonzero(mask_tensor[:,:,:,-1]))
+    init_nonzero = tf.cast(tf.count_nonzero(mask_tensor[:,:,:,-1]), dtype=tf.float32)
 
     mask_tensor_sample = tf.nn.dropout(mask_tensor_sample, 0.7) * 0.7
     #drop_nonzero = tf.to_float(tf.count_nonzero(mask_tensor_sample[:,:,:,2]))
-    drop_nonzero = tf.to_float(tf.count_nonzero(mask_tensor_sample[:,:,:,-1]))
+    #drop_nonzero = tf.to_float(tf.count_nonzero(mask_tensor_sample[:,:,:,-1]))
+    drop_nonzero = tf.cast(tf.count_nonzero(mask_tensor_sample[:,:,:,-1]), dtype=tf.float32)
 
     response = tf.multiply(mask_tensor_sample, response)
     slice_avg = tf.get_variable('slice_avg', shape=[_, h, w, c],
@@ -255,7 +257,8 @@ def build_inpainting_unet(img, mask, p=0.7):
     return model
 
 def mask_loss(x, labels, masks):
-    cnt_nonzero = tf.to_float(tf.count_nonzero(masks))
+    #cnt_nonzero = tf.to_float(tf.count_nonzero(masks))
+    cnt_nonzero = tf.cast(tf.count_nonzero(masks), dtype=tf.float32)
     loss = tf.reduce_sum(tf.multiply(tf.math.pow(x - labels, 2), masks)) / cnt_nonzero
     return loss, cnt_nonzero
 

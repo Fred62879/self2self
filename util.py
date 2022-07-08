@@ -44,23 +44,25 @@ def load_np_image(path):
 
 # img [n,h,w,n_dim]
 # 0-masked, 1-use for train
-def mask_pixel(img, recon_dir, ratio, mask_path):
+def mask_pixel(img, recon_dir, ratio, mask_path, current_bands):
+    assert(os.path.exists(mask_path))
+
     n_dim = img.shape[-1]
     masked_img = img.copy()
 
-    print(mask_path)
-    assert(os.path.exists(mask_path))
+    # load full mask
+    print(f'    load mask from {mask_path}')
+    mask = np.load(mask_path) # [npixls,full_nchls]
+    smpl_pixls = [np.count_nonzero(mask[:,i])
+                  for i in range(mask.shape[1])]
+    print('    sampled pixls for full mask', smpl_pixls)
 
-    # first ratio% is id of non-masked pixl
-    mask = np.load(mask_path) # [nb,npixls,nchls]  [h,w,1/n_dim]
+    # slide only bands needed
+    mask = mask[:,current_bands]
     (npixls, nchls) = mask.shape
-    img_sz = int(np.sqrt(npixls))
-    mask = mask.reshape((img_sz, img_sz, nchls))
-    #if mask.shape[-1] != n_dim:
-    #    mask = np.tile(mask[:,:,0:1], n_dim)
 
-    mask = np.expand_dims(mask, axis=0) # [1,h,w,1/n_dim]
-    #mask = np.tile(mask, n_dim).astype(np.float32)
+    img_sz = int(np.sqrt(npixls))
+    mask = mask.reshape((img_sz, img_sz, nchls))[np.newaxis]
     mask = mask.astype(np.float32)
     masked_img *= mask
 
@@ -77,20 +79,22 @@ def reconstruct(gt, recon, recon_path, loss_dir, header=None):
     np.save(recon_path + '.npy', recon)
 
     if header is not None:
-        print('GT max', np.round(np.max(gt, axis=(1,2)), 3) )
-        print('Recon pixl max ', np.round(np.max(recon, axis=(1,2)), 3) )
-        print('Recon stat ', round(np.min(recon), 3), round(np.median(recon), 3),
-              round(np.mean(recon), 3), round(np.max(recon), 3))
+        print('    GT max', np.round(np.max(gt, axis=(1,2)), 2) )
+        print('    Recon pixl max ', np.round(np.max(recon, axis=(1,2)), 2) )
+        #print('    Recon stat ', round(np.min(recon), 3), round(np.median(recon), 6),
+        #      round(np.mean(recon), 3), round(np.max(recon), 3))
 
         hdu = fits.PrimaryHDU(data=recon, header=header)
         hdu.writeto(recon_path + '.fits', overwrite=True)
 
         losses = get_losses(gt, recon, None, [1,2,4])
 
-        for nm, loss in zip(['_mse','_psnr','_ssim'], losses):
-            fn = '0_'+str(sz)+nm+'_0.npy'
+        for nm, loss in zip(['mse','psnr','ssim'], losses):
+            fn = nm + '.npy'
             loss = np.expand_dims(loss, axis=0)
-            print(loss)
+            if loss == 'ssim': rd = 5
+            else: rd = 2
+            print(f'    {nm}', np.round(loss, rd))
             np.save(os.path.join(loss_dir, fn), loss)
 
 
@@ -121,7 +125,7 @@ def calculate_sam(org_img, pred_img, convert_to_degree=False):
 def calculate_psnr(gen, gt):
     mse = calculate_mse(gen, gt)
     mx = np.max(gt)
-    return 20 * np.log10(mx / np.sqrt(mse))
+    return 20 * np.log10(mx / np.sqrt(mse + 1e-10))
 
 def calculate_mse(gen, gt):
     mse = np.mean((gen - gt)**2)

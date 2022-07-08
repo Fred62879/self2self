@@ -14,7 +14,6 @@ tf.disable_v2_behavior()
 from astropy.io import fits
 from parser import parse_args
 
-# python demo_inpainting.py --nfls 11 --imgsz 512 --ratio 10 --niters 20
 
 def train(dropout_rate, N_PREDICTION, args):
     # load data
@@ -25,13 +24,13 @@ def train(dropout_rate, N_PREDICTION, args):
     _, w, h, c = np.shape(gt)
 
     masked_img, mask = util.mask_pixel\
-        (gt, args.recon_dir, 1 - args.sample_ratio, args.sampled_pixl_id_fn)
+        (gt, args.recon_dir, 1 - args.sample_ratio,
+         args.sampled_pixl_id_fn, args.current_bands)
 
-    print('Training on %d percent pixls' % (args.sample_ratio*100))
-    print([np.count_nonzero(mask[...,i]) for i in range(mask.shape[-1])])
-    print('GT max', np.round(np.max(gt, axis=(0,1,2)), 3) )
-    print('GT & mask shape', gt.shape, gt.dtype, mask.shape, mask.dtype,
-          masked_img.shape, masked_img.dtype)
+    #print('Training on %d percent pixls' % (args.sample_ratio*100))
+    #print('GT max', np.round(np.max(gt, axis=(0,1,2)), 3) )
+    #print('GT & mask shape', gt.shape, gt.dtype, mask.shape, mask.dtype,
+    #      masked_img.shape, masked_img.dtype)
 
     # train
     tf.reset_default_graph()
@@ -59,7 +58,7 @@ def train(dropout_rate, N_PREDICTION, args):
             if step == 0 or (step + 1) % args.model_smpl_intvl == 0:
                 print("[Iteration/Total]:[%d/%d], [avg_loss]:[%.4f]" %
                       (step + 1, args.num_epochs, avg_loss / args.model_smpl_intvl))
-                print('Iteration {}, non zero mask {}'.format(step, cur_non_zero))
+                print('    Iteration {}, non zero mask {}'.format(step, cur_non_zero))
                 avg_loss = 0
                 sum = np.float32(np.zeros(our_image.shape.as_list()))
 

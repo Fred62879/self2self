@@ -40,15 +40,12 @@ def add_cmd_line_args(parser):
     # inpainting args
     parser.add_argument('--inpaint_cho', type=int, default=0, help='0-no inpaint, 1-spatial, 2-spectral')
     parser.add_argument('--mask_cho', type=int, default=0, help='0-diff across bands,1-same across bands,2-region')
-    parser.add_argument('--mask_band_cho', type=int, default=0)
-    parser.add_argument('--mask_sz', type=int, default=1)
+    parser.add_argument('--mask_band_cho', type=int, default=0, help='defines which band is masked')
+    parser.add_argument('--mask_bandset_cho', type=int, default=0, help='defines larger set of bands')
     parser.add_argument('--mask_seed', type=int, default=0)
-    parser.add_argument('--m_start_r', type=int, default=1)
-    parser.add_argument('--m_start_c', type=int, default=1)
     parser.add_argument('--sample_ratio', type=float, default=1.0)
-    parser.add_argument('--sample_ratio_cho', type=int, required=False)
-    parser.add_argument('--train_bands', nargs='+', required=False)
-    parser.add_argument('--inpaint_bands', nargs='+', required=False)
+    parser.add_argument('--sample_ratio_cho', type=int)
+    parser.add_argument('--current_bands', nargs='+', type=int)
 
     args = parser.parse_args()
     config = vars(args)
@@ -70,14 +67,19 @@ def add_input_paths(config):
 
     input_dir = join(data_dir, dr +'_input')
     img_data_dir = join(input_dir, sensor_col_nm, 'img_data')
-    mask_dir = join(input_dir, 'sampled_pixl_ids',
-                    'cutout_' + suffx[:-4] +
-                    '_mask_' + str(config['mask_band_cho']) +'_'
-                    + str(config['inpaint_cho']) + '_'
-                    + str(config['mask_cho']) + '_'
-                    + str(config['mask_seed']))
 
-    for path in [input_dir, mask_dir, img_data_dir]:
+    dirs = [input_dir, img_data_dir]
+
+    if config['inpaint_cho'] == 2:
+        mask_dir = join(input_dir, 'sampled_pixl_ids',
+                        'cutout_' + suffx[:-4] +
+                        '_mask_' + str(config['mask_bandset_cho']) +'_'
+                        + str(config['mask_band_cho']) + '_'
+                        + str(config['mask_cho']) + '_'
+                        + str(config['mask_seed']))
+        dirs.append(mask_dir)
+
+    for path in dirs:
         Path(path).mkdir(parents=True, exist_ok=True)
 
     config['data_dir'] = data_dir
@@ -85,7 +87,6 @@ def add_input_paths(config):
     config['input_dir'] = input_dir
     config['dud_dir'] = join(input_dir, dr+'_dud')
     config['gt_img_fn'] = join(img_data_dir, 'gt_img_'+ suffx)
-
     config['fits_fn'] = join(config['dud_dir'], 'calexp-HSC-G-'+config['footprint']+'-'+
                              config['tile_id']+'%2C'+config['subtile_id']+'.fits')
 
@@ -119,19 +120,6 @@ def add_train_infer_args(config):
     config['loss_options'] = [1,2,4]
     config['metric_names'] = ['mse','psnr','ssim']
 
-    # inpaint specification
-    tb = config['train_bands']
-    ib = config['inpaint_bands']
-    if ib is None:
-        config['inpaint_bands'] = []
-    elif config['inpaint_cho'] == 1:
-        config['inpaint_bands'] = list(np.arange(config['num_bands']))
-    else:
-        config['inpaint_bands'] = [int(i) for i in ib]
-    if tb is None or config['inpaint_cho'] == 1:
-        config['train_bands'] = list(np.arange(config['num_bands']))
-    else:
-        config['train_bands'] = [int(i) for i in tb]
 
 def add_output_paths(config):
     output_dir = join\
@@ -163,12 +151,6 @@ def add_output_paths(config):
 def process_config(config):
     config['num_bands'] = len(config['sensors_full_name'])
 
-    # redefine experiment id if para_nms specified
-    if config['para_nms'] is not None:
-        config['experiment_id'] = [
-            str(config[para_nm]) + '_' for para_nm in config['para_nms']
-        ][:-1]
-
     # define img id
     config['img_id'] = config['footprint'] + config['tile_id'] + config['subtile_id']
 
@@ -176,6 +158,14 @@ def process_config(config):
     if config['inpaint_cho'] != 0 and config['sample_ratio_cho'] is not None:
         ratios = [0, 0.0001, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.5, 0.8, 1.0]
         config['sample_ratio'] = ratios[config['sample_ratio_cho']]
+
+    # redefine experiment id if para_nms specified
+    if config['para_nms'] is not None:
+        eid = ''
+        for para_nm in config['para_nms']:
+            eid += str(config[para_nm]) + '_'
+        config['experiment_id'] = eid[:-1]
+
 
 ''' parse all command arguments and generate all needed ones '''
 def parse_args(parser):

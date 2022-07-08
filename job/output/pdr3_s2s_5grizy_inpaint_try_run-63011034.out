@@ -1,0 +1,102 @@
+WARNING:tensorflow:From /home/fred862/env/astro_env/lib/python3.7/site-packages/tensorflow/python/compat/v2_compat.py:111: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+WARNING:tensorflow:From /home/fred862/env/astro_env/lib/python3.7/site-packages/tensorflow/python/util/dispatch.py:1096: calling dropout (from tensorflow.python.ops.nn_ops) with keep_prob is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use `rate` instead of `keep_prob`. Rate should be set to `rate = 1 - keep_prob`.
+2022-07-08 13:58:11.120800: I tensorflow/core/platform/cpu_feature_guard.cc:151] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 AVX512F FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-07-08 13:58:14.860865: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1525] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 13116 MB memory:  -> device: 0, name: Tesla T4, pci bus id: 0000:5e:00.0, compute capability: 7.5
+2022-07-08 13:58:17.846994: I tensorflow/stream_executor/cuda/cuda_dnn.cc:366] Loaded cuDNN version 8200
+2022-07-08 13:58:18.715845: I tensorflow/core/platform/default/subprocess.cc:304] Start cannot spawn child process: No such file or directory
+2022-07-08 13:58:18.720778: I tensorflow/core/platform/default/subprocess.cc:304] Start cannot spawn child process: No such file or directory
+2022-07-08 13:58:18.721031: W tensorflow/stream_executor/gpu/asm_compiler.cc:80] Couldn't get ptxas version string: INTERNAL: Couldn't invoke ptxas --version
+2022-07-08 13:58:18.723575: I tensorflow/core/platform/default/subprocess.cc:304] Start cannot spawn child process: No such file or directory
+2022-07-08 13:58:18.723802: W tensorflow/stream_executor/gpu/redzone_allocator.cc:314] INTERNAL: Failed to launch ptxas
+Relying on driver to perform ptx compilation. 
+Modify $PATH to customize ptxas location.
+This message will be only logged once.
+/scratch/fred862/fred862/code/astro/s2s/util.py:95: FutureWarning: elementwise comparison failed; returning scalar instead, but in the future will perform elementwise comparison
+  if loss == 'ssim': rd = 5
+=== Parsing
+--- output dir ../../../data/astro/pdr3_output/s2s_output/5_grizy/trail_7070/0_0_0.0001
+    load mask from ../../../data/astro/pdr3_input/sampled_pixl_ids/cutout_981316_512_0_0_mask_0_0_0_0/512_0.01.npy
+    sampled pixls for full mask [262144, 26, 262144, 26, 262144]
+[Iteration/Total]:[1/4000], [avg_loss]:[0.0257]
+    Iteration 0, non zero mask 235722.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.43  0.   11.26  0.  ]]
+    psnr [[147.25  38.32 149.8   40.7  153.6 ]]
+    ssim [[1.   0.02 1.   0.01 1.  ]]
+[Iteration/Total]:[400/4000], [avg_loss]:[9.4533]
+    Iteration 399, non zero mask 235382.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.9   0.  ]]
+    psnr [[147.25  38.62 149.8   40.84 153.6 ]]
+    ssim [[1.   0.73 1.   0.49 1.  ]]
+[Iteration/Total]:[800/4000], [avg_loss]:[9.3772]
+    Iteration 799, non zero mask 236393.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.9   0.  ]]
+    psnr [[147.25  38.62 149.8   40.85 153.6 ]]
+    ssim [[1.   0.75 1.   0.52 1.  ]]
+[Iteration/Total]:[1200/4000], [avg_loss]:[9.4807]
+    Iteration 1199, non zero mask 235260.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.9   0.  ]]
+    psnr [[147.25  38.62 149.8   40.85 153.6 ]]
+    ssim [[1.   0.77 1.   0.53 1.  ]]
+[Iteration/Total]:[1600/4000], [avg_loss]:[9.4708]
+    Iteration 1599, non zero mask 236266.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.89  0.  ]]
+    psnr [[147.25  38.62 149.8   40.85 153.6 ]]
+    ssim [[1.   0.79 1.   0.53 1.  ]]
+[Iteration/Total]:[2000/4000], [avg_loss]:[9.4109]
+    Iteration 1999, non zero mask 236041.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.89  0.  ]]
+    psnr [[147.25  38.62 149.8   40.85 153.6 ]]
+    ssim [[1.   0.79 1.   0.54 1.  ]]
+[Iteration/Total]:[2400/4000], [avg_loss]:[9.5248]
+    Iteration 2399, non zero mask 235966.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.89  0.  ]]
+    psnr [[147.25  38.62 149.8   40.85 153.6 ]]
+    ssim [[1.   0.79 1.   0.54 1.  ]]
+[Iteration/Total]:[2800/4000], [avg_loss]:[9.4553]
+    Iteration 2799, non zero mask 236887.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.89  0.  ]]
+    psnr [[147.25  38.62 149.8   40.85 153.6 ]]
+    ssim [[1.   0.79 1.   0.55 1.  ]]
+[Iteration/Total]:[3200/4000], [avg_loss]:[9.4517]
+    Iteration 3199, non zero mask 235624.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.89  0.  ]]
+    psnr [[147.25  38.62 149.8   40.85 153.6 ]]
+    ssim [[1.   0.8  1.   0.55 1.  ]]
+[Iteration/Total]:[3600/4000], [avg_loss]:[9.3762]
+    Iteration 3599, non zero mask 235830.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.89  0.  ]]
+    psnr [[147.25  38.62 149.8   40.85 153.6 ]]
+    ssim [[1.   0.8  1.   0.55 1.  ]]
+[Iteration/Total]:[4000/4000], [avg_loss]:[9.4002]
+    Iteration 3999, non zero mask 236087.0
+    GT max [230.33 173.33 309.11 363.86 478.88]
+    Recon pixl max  [230.33   1.   309.11   1.   478.88]
+    mse [[ 0.    4.13  0.   10.89  0.  ]]
+    psnr [[147.25  38.62 149.8   40.85 153.6 ]]
+    ssim [[1.   0.8  1.   0.55 1.  ]]
+Timing  799.1254374980927
