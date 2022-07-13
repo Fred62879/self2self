@@ -53,6 +53,7 @@ def mask_pixel(img, recon_dir, ratio, mask_path, current_bands):
     # load full mask
     print(f'    load mask from {mask_path}')
     mask = np.load(mask_path) # [npixls,full_nchls]
+    print(mask.shape)
     smpl_pixls = [np.count_nonzero(mask[:,i])
                   for i in range(mask.shape[1])]
     print('    sampled pixls for full mask', smpl_pixls)
