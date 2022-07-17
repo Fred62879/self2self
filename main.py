@@ -69,10 +69,13 @@ def train(dropout_rate, N_PREDICTION, args):
                 recon = sum/N_PREDICTION
                 recon = recon.reshape((args.img_sz, args.img_sz,-1)).transpose(2,0,1)
                 recon_path = os.path.join(args.recon_dir, str(id+1))
-                util.reconstruct(gt[0].transpose(2,0,1), recon,
-                                 recon_path, args.metric_dir, header=header)
-                id += 1
 
+                mask = None if not args.recon_restore else \
+                    np.load(args.sampled_pixl_id_fn).T.reshape((-1,args.img_sz,args.img_sz))
+
+                util.reconstruct(gt[0].transpose(2,0,1), recon, recon_path,
+                                 args.metric_dir, mask=mask, header=header)
+                id += 1
 
 if __name__ == '__main__':
     start = time.time()

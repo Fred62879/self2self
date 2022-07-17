@@ -74,29 +74,56 @@ def mask_pixel(img, recon_dir, ratio, mask_path, current_bands):
 
     return masked_img, mask
 
+def restore_unmasked(recon, gt, mask):
+    ''' fill recon with unmasked pixels from gt
+        recon/gt/mask [nbands,sz,sz]
+    '''
+    (nbands,sz,sz) = recon.shape
+    npixls = sz**2
+
+    recon = recon.reshape((nbands, -1))
+    gt = gt.reshape((nbands, -1))
+
+    for i in range(nbands):
+        cur_mask = mask[i]
+        is_train_band = np.count_nonzero(cur_mask) == npixls
+        if is_train_band:
+            recon[i] = gt[i]
+        else:
+            ids = np.arange(npixls).reshape((sz,sz))
+            unmasked_ids = (ids[cur_mask == 1]).flatten()
+            recon[i][unmasked_ids] = gt[i][unmasked_ids]
+
+    recon = recon.reshape((-1,sz,sz))
+    return recon
+
 # gt/recon, [c,h,w]
-def reconstruct(gt, recon, recon_path, loss_dir, header=None):
+def reconstruct(gt, recon, recon_path, loss_dir, mask=None, header=None):
     sz = gt.shape[1]
     np.save(recon_path + '.npy', recon)
 
-    if header is not None:
-        print('    GT max', np.round(np.max(gt, axis=(1,2)), 2) )
-        print('    Recon pixl max ', np.round(np.max(recon, axis=(1,2)), 2) )
-        #print('    Recon stat ', round(np.min(recon), 3), round(np.median(recon), 6),
-        #      round(np.mean(recon), 3), round(np.max(recon), 3))
+    print('    GT max', np.round(np.max(gt, axis=(1,2)), 2) )
+    print('    Recon pixl max ', np.round(np.max(recon, axis=(1,2)), 2) )
+    #print('    Recon stat ', round(np.min(recon), 3), round(np.median(recon), 6),
+    #      round(np.mean(recon), 3), round(np.max(recon), 3))
 
+    if mask is not None:
+        recon_restored = restore_unmasked(recon, gt, mask)
+        np.save(recon_path + '_restored.npy', recon_restored)
+
+    if header is not None:
         hdu = fits.PrimaryHDU(data=recon, header=header)
         hdu.writeto(recon_path + '.fits', overwrite=True)
 
-        losses = get_losses(gt, recon, None, [1,2,4])
+    losses = get_losses(gt, recon, None, [1,2,4])
 
-        for nm, loss in zip(['mse','psnr','ssim'], losses):
-            fn = nm + '.npy'
-            loss = np.expand_dims(loss, axis=0)
-            if loss == 'ssim': rd = 5
-            else: rd = 2
-            print(f'    {nm}', np.round(loss, rd))
-            np.save(os.path.join(loss_dir, fn), loss)
+    for nm, loss in zip(['mse','psnr','ssim'], losses):
+        fn = nm + '.npy'
+        loss = np.expand_dims(loss, axis=0)
+        if nm == 'ssim': rd = 5
+        else: rd = 2
+        print(f'    {nm}', np.round(loss, rd))
+        np.save(os.path.join(loss_dir, fn), loss)
 
 
 def calculate_ssim(gt, gen):
