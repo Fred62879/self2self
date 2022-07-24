@@ -125,23 +125,12 @@ def reconstruct(gt, recon, recon_path, loss_dir, mask=None, header=None):
         print(f'    {nm}', np.round(loss, rd))
         np.save(os.path.join(loss_dir, fn), loss)
 
-
-def calculate_ssim(gt, gen):
+def calculate_ssim(gen, gt):
     rg = np.max(gt)-np.min(gt)
     return structural_similarity(gt, gen, data_range=rg)
                                  #win_size=len(org_img))
-
-def calculate_sam_spectrum(gt, gen, convert_to_degree=False):
-    numerator = np.sum(np.multiply(gt, gen))
-    denominator = np.linalg.norm(gt) * np.linalg.norm(gen)
-    val = np.clip(numerator / denominator, -1, 1)
-    sam_angles = np.arccos(val)
-    if convert_to_degree:
-        sam_angles = sam_angles * 180.0 / np.pi
-    return sam_angles
-
 # image shape should be [sz,sz,nchls]
-def calculate_sam(org_img, pred_img, convert_to_degree=False):
+def calculate_sam(pred_img, org_img, convert_to_degree=False):
     numerator = np.sum(np.multiply(pred_img, org_img), axis=2)
     denominator = np.linalg.norm(org_img, axis=2) * np.linalg.norm(pred_img, axis=2)
     val = np.clip(numerator / denominator, -1, 1)
@@ -152,8 +141,7 @@ def calculate_sam(org_img, pred_img, convert_to_degree=False):
 
 def calculate_psnr(gen, gt):
     mse = calculate_mse(gen, gt)
-    mx = np.max(gt)
-    return 20 * np.log10(mx / np.sqrt(mse + 1e-10))
+    return 20 * np.log10(np.max(gt) / np.sqrt(mse + 1e-10))
 
 def calculate_mse(gen, gt):
     mse = np.mean((gen - gt)**2)
@@ -168,7 +156,7 @@ def calculate_ncc(img1, img2):
 
 def get_loss(gt, gen, mx, j, option):
     if option == 0:
-        loss = np.abs(gt[j] - gen[j]).mean()
+        loss = np.abs(gen[j] - gt[j]).mean()
     elif option == 1:
         loss = calculate_mse(gen[j], gt[j])
     elif option == 2:
